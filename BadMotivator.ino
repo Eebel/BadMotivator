@@ -1,5 +1,10 @@
 // Tim Hebel's Bad Motivator sequence
-// 10 Feb 2022
+// V.02
+// 7 Apr 2022
+
+//****************LOG********************
+//V0.02 added a time value for the Servo to move.  This allows you to move the time the servo triggers in the sequence
+//V0.01 Initial release
 // This code is not guaranteed.  Use at your own risk,
 // *********  WARNING WARNING WARNING    *********
 //    If you don't use OHM's Law to change the voltage to an appropriate value
@@ -41,6 +46,7 @@ const int  PIN_TESTALL     =   12; //runs the entire sequence similating a signa
 //1000ms = 1 second
 const int TIME_SMOKE_ON   = 0;  //at 0 the smoke coils starts heating.  I found I needed to heat slightly before airflow
 const int TIME_PUMP_ON    = 750;  // .75 seconds later, the air pump comes on
+const int TIME_SERVO_MOVE = 1250; // .5 seconds after air pump starts
 const int TIME_SMOKE_OFF  = 3750;  //3.75 seconds later, the smoke turns off
 const int TIME_PUMP_OFF   = 6750;  //6.75 seconds later, the pump turn off to make sure the tubes are clear of vapor
 
@@ -52,6 +58,7 @@ unsigned long pumpOnMillis = 0; // Time to sequence the Air Pump On
 unsigned long pumpOffMillis = 0; //Tim to sequence the Air Pump Off
 unsigned long smokeOnMillis = 0; //Time to sequence the Smoke ON
 unsigned long smokeOffMillis = 0; //Time to sequence the Smoke Off
+unsigned long servoOpenMillis = 0; //Time to sequence the servo to opent the bad motivator.
 
 bool isTriggered = false; //was trigger sent? Then, Start smoke sequence
 bool wasTriggered = false; //smoke sequence is active, don't trigger again until complete
@@ -208,6 +215,7 @@ void loop() {
    //Store the times of the events for easy reference
     smokeOnMillis = millis() + TIME_SMOKE_ON; //Sequence Elapsed time = 0ms
     pumpOnMillis = millis()+ TIME_PUMP_ON; //Sequence Elapsed time  = 750ms
+    servoOpenMillis = millis()+ TIME_SERVO_MOVE; //Sequence Elapsed time = 1250 ms
     smokeOffMillis = millis() + TIME_SMOKE_OFF;//Sequence Elapsed time  = 3750ms
     pumpOffMillis = millis() + TIME_PUMP_OFF;//Sequence Elapsed time  = 6750ms
     //Turn airpump ON if user wants airflow first
@@ -218,7 +226,7 @@ void loop() {
     //   digitalWrite(PIN_SMOKERELAY, HIGH);
     // }
     //Open the Motivator  
-    Servo1.easeTo(servoOpen,360);
+    //Servo1.easeTo(servoOpen,360);
     
     #ifdef DEBUG
     Serial.println("isTriggered was true;");
@@ -239,6 +247,9 @@ void loop() {
       #ifdef DEBUG
         //Serial.println("Smoke ON;");
       #endif
+    }
+    else if(millis()> servoOpenMillis){//This can run at anytime base on yout value.  Here it is slightly after smoke starts.
+      Servo1.easeTo(servoOpen, 360);
     }
     else if(millis()> pumpOnMillis){//should run this second
       digitalWrite(PIN_PUMPRELAY, HIGH); //Smoke ON
