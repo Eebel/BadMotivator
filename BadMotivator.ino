@@ -1,6 +1,6 @@
 // Tim Hebel's Bad Motivator sequence
-// V.02
-// 7 Apr 2022
+// V.03
+// 7 Sep 2022
 
 //****************LOG********************
 //V0.02 added a time value for the Servo to move.  This allows you to move the time the servo triggers in the sequence
@@ -114,7 +114,10 @@ buttonTestSmoke.setDebounceTime(50);
 buttonTestAll.setDebounceTime(50);
 
   //This text is a joke.  Everything is working and we are ready to go!
-  Serial.println("Motivation level is BAD! Failiure imminent..");
+  Serial.println("Motivation level is BAD! Failure imminent..");
+  isTriggered = digitalRead(PIN_TRIGGER);
+    Serial.println("PIN_TRIGGER State Read as:");
+    Serial.println(isTriggered);
 }
 
 void loop() {
@@ -194,7 +197,7 @@ void loop() {
     isTriggered = true;
   }
  
- if(digitalRead(PIN_TRIGGER) == 0){
+ if(digitalRead(PIN_TRIGGER) == HIGH){
    //Trigger signal from user detected
   isTriggered = true;//digitalRead(PIN_TRIGGER);
       #ifdef DEBUG
