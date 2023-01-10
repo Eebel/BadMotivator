@@ -15,6 +15,7 @@
 //  or anything that can connect to the trigger pin and groun on the Arduino Nano
 //  Alternativley, it provides for benchtop testing and tuning with manual buttons
 //  mounted to the bad motivator.
+//-----I used NeoPatterns Version 2.3.1
 
 #include <Arduino.h>
 #include "NeoPatterns.h"
