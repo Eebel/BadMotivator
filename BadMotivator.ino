@@ -1,8 +1,10 @@
 // Tim Hebel's Bad Motivator sequence
-// V.03
-// 7 Sep 2022
+// V.04
+// 28 Sep 2023
 
 //****************LOG********************
+//V0.04 Added Servo1.detach() and Servo1.attach() commands to take power off the servo when not in use to prolong servo life. 
+//V0.03 updated libraries
 //V0.02 added a time value for the Servo to move.  This allows you to move the time the servo triggers in the sequence
 //V0.01 Initial release
 // This code is not guaranteed.  Use at your own risk,
@@ -15,10 +17,11 @@
 //  or anything that can connect to the trigger pin and groun on the Arduino Nano
 //  Alternativley, it provides for benchtop testing and tuning with manual buttons
 //  mounted to the bad motivator.
-//-----I used NeoPatterns Version 2.3.1
+//NeoPatterns Version 3.2.1
+//ezButton Version 1.0.4
 
 #include <Arduino.h>
-#include "NeoPatterns.h"
+#include "NeoPatterns.hpp"
 #include <ezButton.h>
 #include "ServoEasing.hpp"
 
@@ -64,9 +67,10 @@ unsigned long servoOpenMillis = 0; //Time to sequence the servo to opent the bad
 bool isTriggered = false; //was trigger sent? Then, Start smoke sequence
 bool wasTriggered = false; //smoke sequence is active, don't trigger again until complete
 bool updatePixels = false;  //flag for NeoPixelRing updating.
+bool resetAndDetachOnce = false;  //flag for detaching the servo once after a reset;
 
-int servoClosed = 158;//degrees of servo when closed
-int servoOpen   = 30;//degrees of servo weh open
+int servoClosed = 150;//degrees of servo when closed was 158
+int servoOpen   = 25;//degrees of servo when open was 30
 
 ezButton buttonReset(PIN_RESET);        //Push this button to lower the bad motivator, turn off lights and reset logic
 ezButton buttonTestPump(PIN_TESTPUMP);  // create ezButton object that attaches to PIN_TESTPUMP to test pump/servo range
@@ -95,6 +99,8 @@ digitalWrite(PIN_SMOKERELAY, LOW);   //Make sure the smoke relay is off
     if (Servo1.attach(PIN_SERVO, servoClosed) == INVALID_SERVO) {
         Serial.println(F("Error attaching servo"));
     }
+    delay(1000);
+    Servo1.detach();
 //Start serial commincations
   Serial.begin(115200);
 
@@ -128,14 +134,26 @@ void loop() {
   buttonTestSmoke.loop();
   buttonTestAll.loop();
 
+  if (resetAndDetachOnce){
+    Servo1.detach();
+    resetAndDetachOnce = false;
+    Serial.println("Servo1 isDetached");
+  }
 
+//*************************BUTONS*********************************************
+//****************************************************************************
+  if(buttonReset.isPressed()) {
+      //Servo1.attach(PIN_SERVO, servoClosed);
+      Servo1.easeTo(servoClosed,45);
+      resetAndDetachOnce = true;//set the flag so the servo can detach and be unpowered
+      Serial.println("Reset Button.isPressed");
+      }
   if(buttonReset.isReleased()){
     //RESET all the logic and lower the motivator slowly
-    Servo1.easeTo(servoClosed,45); //close at 45/sec
     updatePixels = false; //stop updates to pixels
     ring1.ColorWipe(0,0,0);  //turn NeoPixel ring off;    
     #ifdef DEBUG
-      Serial.println("Button Reset Pushed");
+      Serial.println("Button ResetButtton.isReleased");
     #endif
   }
   //Run pump only-toggle
@@ -199,10 +217,11 @@ void loop() {
   }
  
  if(digitalRead(PIN_TRIGGER) == HIGH){
-   //Trigger signal from user detected
+   //28Sep23
+   //CHANGE to == LOW for benchtop testing Use HIGH for in Droid
   isTriggered = true;//digitalRead(PIN_TRIGGER);
       #ifdef DEBUG
-        Serial.println("PIN_TRIGGER State Read as:");
+        Serial.print("PIN_TRIGGER State Read as: ");
         //Serial.print("stateTestAllButton: ");
         Serial.println(isTriggered);
       #endif
@@ -242,8 +261,9 @@ void loop() {
       digitalWrite(PIN_PUMPRELAY, LOW);  //Pump OFF and reset flags for a subsequent trigger
       isTriggered = false; //set this false again in case we got a second command while running.
       wasTriggered = false;
+      //Servo1.detach();
       #ifdef DEBUG
-        //Serial.println("Smoke Sequence complete;");
+        Serial.println("Smoke Sequence complete;");
       #endif
     }
     else if(millis()> smokeOffMillis){//should run this third
@@ -252,8 +272,13 @@ void loop() {
         //Serial.println("Smoke ON;");
       #endif
     }
-    else if(millis()> servoOpenMillis){//This can run at anytime base on yout value.  Here it is slightly after smoke starts.
+    else if(millis()> servoOpenMillis){//This can run at anytime base on your value.  Here it is slightly after smoke starts.
+      if (!Servo1.attached()){Servo1.attach(PIN_SERVO,servoClosed);}
       Servo1.easeTo(servoOpen, 360);
+      //Serial.println("INEVEREND;");
+      // if (!Servo1.isMoving()){
+      //   Servo1.detach();
+      // }
     }
     else if(millis()> pumpOnMillis){//should run this second
       digitalWrite(PIN_PUMPRELAY, HIGH); //Smoke ON
